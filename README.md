@@ -30,15 +30,15 @@ Building requirements:
 
 Building:
 -----
-cd hevcesbrowser
-git submodule init && git submodule update
-mkdir project
-cd project
-cmake ../
+cd hevcesbrowser  
+git submodule init && git submodule update  
+mkdir project  
+cd project  
+cmake ../  
 make
 
-cd ../utils/hevc_es_browser_gui/
-qmake hevc_es_browser_gui.pro
-make gitinfo
+cd ../utils/hevc_es_browser_gui/  
+qmake hevc_es_browser_gui.pro  
+make gitinfo  
 make
 
