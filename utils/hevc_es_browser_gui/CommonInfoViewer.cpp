@@ -38,8 +38,20 @@ void CommonInfoViewer::onNALUnit(std::shared_ptr<HEVC::NALUnit> pNALUnit, const 
   int row = rowCount();
   insertRow(row);
 
-  QString offset = "0x"+ QString::number(pInfo -> m_position, 16) + " (" + QString::number(pInfo -> m_position) + ")";
-  setItem(row, 0, new QTableWidgetItem(offset));
+  static int frameNum = 0;
+
+  QString tmp = "";
+  //QString offset = "0x"+ QString::number(pInfo -> m_position, 16) + " (" + QString::number(pInfo -> m_position) + ")";
+  for (int i = 0; i < 8 - QString::number(pInfo -> m_position, 16).length(); i++)
+  {
+    tmp += "0";
+  }
+  QString offset = "0x"+ tmp + QString::number(pInfo -> m_position, 16);
+
+  QTableWidgetItem *offset_item = new QTableWidgetItem(offset);
+  //offset_item->setTextAlignment(Qt::AlignCenter);
+  setItem(row, 0, offset_item);
+
   setItem(row, 1, new QTableWidgetItem(QString()));
 
   if(row > 0)
@@ -53,7 +65,9 @@ void CommonInfoViewer::onNALUnit(std::shared_ptr<HEVC::NALUnit> pNALUnit, const 
   {
     case NAL_VPS:
     {
-      setItem(row, 3, new QTableWidgetItem("Video parameter set"));
+      QTableWidgetItem *vps_item = new QTableWidgetItem("Video Parameter Set");
+      vps_item->setTextColor(QColor("#FF8888"));
+      setItem(row, 3, vps_item);
       std::shared_ptr<HEVC::VPS> pVPS = std::dynamic_pointer_cast<HEVC::VPS>(pNALUnit);
       using namespace HEVC;
       if(m_vpsMap.find(pVPS -> vps_video_parameter_set_id) == m_vpsMap.end() || !(*m_vpsMap[pVPS -> vps_video_parameter_set_id] == *pVPS))
@@ -67,7 +81,9 @@ void CommonInfoViewer::onNALUnit(std::shared_ptr<HEVC::NALUnit> pNALUnit, const 
 
     case NAL_SPS:
     {
-      setItem(row, 3, new QTableWidgetItem("Sequence parameter set"));
+      QTableWidgetItem *sps_item = new QTableWidgetItem("Sequence Parameter Set");
+      sps_item->setTextColor(QColor("#FF8888"));
+      setItem(row, 3, sps_item);
       std::shared_ptr<HEVC::SPS> pSPS = std::dynamic_pointer_cast<HEVC::SPS>(pNALUnit);
 
       if(m_spsMap.find(pSPS -> sps_seq_parameter_set_id) == m_spsMap.end() || !(*m_spsMap[pSPS -> sps_seq_parameter_set_id] == *pSPS))
@@ -82,7 +98,9 @@ void CommonInfoViewer::onNALUnit(std::shared_ptr<HEVC::NALUnit> pNALUnit, const 
 
     case NAL_PPS:
     {
-      setItem(row, 3, new QTableWidgetItem("Picture parameter set"));
+      QTableWidgetItem *pps_item = new QTableWidgetItem("Picture Parameter Set");
+      pps_item->setTextColor(QColor("#FF8888"));
+      setItem(row, 3, pps_item);
       std::shared_ptr<HEVC::PPS> pPPS = std::dynamic_pointer_cast<HEVC::PPS>(pNALUnit);
 
       if(m_ppsMap.find(pPPS -> pps_pic_parameter_set_id) == m_ppsMap.end() || !(*m_ppsMap[pPPS -> pps_pic_parameter_set_id] == *pPPS))
@@ -98,7 +116,10 @@ void CommonInfoViewer::onNALUnit(std::shared_ptr<HEVC::NALUnit> pNALUnit, const 
     case NAL_IDR_W_RADL:
     case NAL_IDR_N_LP:
     {
-      setItem(row, 3, new QTableWidgetItem("IDR Slice"));
+      QTableWidgetItem *item = new QTableWidgetItem("IDR Slice #" + QString::number(frameNum));
+      item->setTextColor(QColor("red"));
+      setItem(row, 3, item);
+      frameNum++;
       break;
     }
 
@@ -127,16 +148,48 @@ void CommonInfoViewer::onNALUnit(std::shared_ptr<HEVC::NALUnit> pNALUnit, const 
         switch(pSlice -> slice_type)
         {
           case HEVC::Slice::B_SLICE:
-            setItem(row, 3, new QTableWidgetItem("B Slice"));
+          {
+            QTableWidgetItem *B_item = new QTableWidgetItem("B Slice #" + QString::number(frameNum));
+            if (pNALUnit->m_nalHeader.type == NAL_TSA_N)
+            {
+              B_item->setTextColor(QColor("#FF6EB4"));
+            }
+            else if (pNALUnit->m_nalHeader.type == NAL_TSA_R)
+            {
+              B_item->setTextColor(QColor("#FF83FA"));
+            }
+            else if (pNALUnit->m_nalHeader.type == NAL_TRAIL_N)
+            {
+              B_item->setTextColor(QColor("#E066FF"));
+            }
+            else if (pNALUnit->m_nalHeader.type == NAL_TRAIL_R)
+            {
+              B_item->setTextColor(QColor("#EE30A7"));
+            }
+            else
+            {
+              B_item->setTextColor(QColor("#FFB90F"));
+            }
+            setItem(row, 3, B_item);
             break;
+          }
           case HEVC::Slice::P_SLICE:
-            setItem(row, 3, new QTableWidgetItem("P Slice"));
+          {
+            QTableWidgetItem *P_item = new QTableWidgetItem("P Slice #" + QString::number(frameNum));
+            P_item->setTextColor(QColor("#0000FF"));
+            setItem(row, 3, P_item);
             break;
+          }
           case HEVC::Slice::I_SLICE:
-            setItem(row, 3, new QTableWidgetItem("I Slice"));
+          {
+            QTableWidgetItem *I_item = new QTableWidgetItem("I Slice #" + QString::number(frameNum));
+            I_item->setTextColor(QColor("#CD9B1D"));
+            setItem(row, 3, I_item);
             break;
+          }
         };
       }
+      frameNum++;
       break;
     }
 
@@ -167,13 +220,17 @@ void CommonInfoViewer::onNALUnit(std::shared_ptr<HEVC::NALUnit> pNALUnit, const 
     case NAL_SEI_PREFIX:
     case NAL_SEI_SUFFIX:
     {
-      setItem(row, 3, new QTableWidgetItem("Supplemental enhancement information"));
+      QTableWidgetItem *sei_item = new QTableWidgetItem("Supplemental Enhancement Information");
+      sei_item->setTextColor(QColor("#BCEE68"));
+      setItem(row, 3, sei_item);
       break;
     }
 
     default:
       setItem(row, 3, new QTableWidgetItem(""));
   };
+
+    setRowHeight(row, 4);
 }
 
 
@@ -198,7 +255,7 @@ void CommonInfoViewer::clear()
 void CommonInfoViewer::saveCustomData()
 {
   QSettings settings("HEVCESBrowser", "HEVCESBrowser");
-  settings.setValue("CommonInfoViewer/0Width", columnWidth(0));
+  settings.setValue("CommonInfoViewer/0000Width", columnWidth(0));
   settings.setValue("CommonInfoViewer/1Width", columnWidth(1));
   settings.setValue("CommonInfoViewer/2Width", columnWidth(2));
   settings.setValue("CommonInfoViewer/3Width", columnWidth(3));
@@ -209,8 +266,8 @@ void CommonInfoViewer::readCustomData()
 {
   QSettings settings("HEVCESBrowser", "HEVCESBrowser");
 
-  if(settings.contains("CommonInfoViewer/0Width"))
-    setColumnWidth(0, settings.value("CommonInfoViewer/0Width").toInt());
+  if(settings.contains("CommonInfoViewer/0000Width"))
+    setColumnWidth(0, settings.value("CommonInfoViewer/0000Width").toInt());
 
   if(settings.contains("CommonInfoViewer/1Width"))
     setColumnWidth(1, settings.value("CommonInfoViewer/1Width").toInt());

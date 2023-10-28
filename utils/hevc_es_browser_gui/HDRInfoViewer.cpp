@@ -284,12 +284,14 @@ void HDRInfoViewer::update()
     video_full_range_flag = m_psps -> vui_parameters.video_full_range_flag;
   }
 
-  addItem(QString("Colour primaries: ") +colourPrimariesToString(colour_primaries));
-  addItem(QString("Transfer characteristics: ") + transferCharacteristicsToString(transfer_characteristics));
-  addItem(QString("Matrix coefficients: ") + matrixCoeficientsToString(matrix_coeffs));
-  addItem(QString("Chroma loc(top): ") + QString::number(chroma_loc_top));
-  addItem(QString("Chroma loc(bot): ") + QString::number(chroma_loc_bottom));
-  addItem(QString("Full range: ") + QString::number(video_full_range_flag));
+  setItemAlignment(Qt::AlignHCenter);//设置文本对齐方式
+
+  addItem(QString("Colour primaries:              ") + colourPrimariesToString(colour_primaries));
+  addItem(QString("Transfer characteristics:  ") + transferCharacteristicsToString(transfer_characteristics));
+  addItem(QString("Matrix coefficients:           ") + matrixCoeficientsToString(matrix_coeffs));
+  addItem(QString("Chroma loc(top):               ") + QString::number(chroma_loc_top));
+  addItem(QString("Chroma loc(bot):               ") + QString::number(chroma_loc_bottom));
+  addItem(QString("Full range:                         ") + QString::number(video_full_range_flag));
 
   if(m_pCLLInfo)
   {

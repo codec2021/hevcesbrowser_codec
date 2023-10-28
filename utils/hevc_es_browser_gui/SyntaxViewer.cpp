@@ -504,10 +504,16 @@ void SyntaxViewer::createSlice(std::shared_ptr<HEVC::Slice> pSlice)
 
   int32_t spsId = pPPS -> pps_seq_parameter_set_id;
   QTreeWidgetItem *pitemDepend, *pitemThird;
-  QTreeWidgetItem *psliceItem = new QTreeWidgetItem(QStringList("Slice"));
+  QTreeWidgetItem *psliceItem = new QTreeWidgetItem(QStringList("Slice Syntax"));
   addTopLevelItem(psliceItem);
 
   QTreeWidgetItem *pitem;
+  
+  psliceItem -> addChild(new QTreeWidgetItem(QStringList("forbidden_zero_bit = " + QString::number(0))));
+  psliceItem -> addChild(new QTreeWidgetItem(QStringList("nal_uint_type = " + QString::number(pSlice -> m_nalHeader.type))));
+  psliceItem -> addChild(new QTreeWidgetItem(QStringList("nuh_layer_id = " + QString::number(pSlice -> m_nalHeader.layer_id))));
+  psliceItem -> addChild(new QTreeWidgetItem(QStringList("nuh_temporal_id_plus1 = " + QString::number(pSlice -> m_nalHeader.temporal_id_plus1))));
+
   psliceItem -> addChild(new QTreeWidgetItem(QStringList("first_slice_segment_in_pic_flag = " + QString::number(pSlice -> first_slice_segment_in_pic_flag))));
 
   if(pSlice -> m_nalHeader.type >= HEVC::NAL_BLA_W_LP && pSlice -> m_nalHeader.type <= HEVC::NAL_IRAP_VCL23)
@@ -582,7 +588,7 @@ void SyntaxViewer::createSlice(std::shared_ptr<HEVC::Slice> pSlice)
 
     if(!IdrPicFlag)
     {
-      pitemDepend = new QTreeWidgetItem(QStringList("if (nal_unit_type != IDR_W_RADL && nal_unit_type != IDR_N_LP)"));
+      pitemDepend = new QTreeWidgetItem(QStringList("if (nal_unit_type != IDR_W_RADL(19) && nal_unit_type != IDR_N_LP(20))"));
       pitem -> addChild(pitemDepend);
 
       pitemDepend -> addChild(new QTreeWidgetItem(QStringList("slice_pic_order_cnt_lsb = " + QString::number(pSlice -> slice_pic_order_cnt_lsb))));
@@ -675,7 +681,7 @@ void SyntaxViewer::createSlice(std::shared_ptr<HEVC::Slice> pSlice)
 
     if(pSlice -> slice_type == SLICE_B || pSlice -> slice_type == SLICE_P)
     {
-      pitemDepend = new QTreeWidgetItem(QStringList("if (slice_type == P || slice_type == B)"));
+      pitemDepend = new QTreeWidgetItem(QStringList("if (slice_type == P(1) || slice_type == B(0))"));
       pitem -> addChild(pitemDepend);
 
       pitemDepend -> addChild(new QTreeWidgetItem(QStringList("num_ref_idx_active_override_flag = " + QString::number(pSlice -> num_ref_idx_active_override_flag))));
@@ -714,7 +720,7 @@ void SyntaxViewer::createSlice(std::shared_ptr<HEVC::Slice> pSlice)
 
       if(pSlice -> slice_type == SLICE_B)
       {
-        pitemThird = new QTreeWidgetItem(QStringList("if (slice_type == B)"));
+        pitemThird = new QTreeWidgetItem(QStringList("if (slice_type == B(0))"));
         pitemDepend -> addChild(pitemThird);
         pitemThird -> addChild(new QTreeWidgetItem(QStringList("mvd_l1_zero_flag = " + QString::number(pSlice -> mvd_l1_zero_flag))));
       }
@@ -1143,6 +1149,12 @@ void SyntaxViewer::createSEI(std::shared_ptr<HEVC::SEI> pSEI)
       }
 
       default:
+
+        std::shared_ptr<HEVC::SeiReservedInfo> pSeiMessage = std::dynamic_pointer_cast<HEVC::SeiReservedInfo>(pSEI -> sei_message[i].sei_payload);
+        QTreeWidgetItem *pitemSei = new QTreeWidgetItem(QStringList("sei reserved_info(" + QString::number(payloadSize) + ")"));
+        pitem -> addChild(pitemSei);
+        createReserved(pSeiMessage, pitemSei);
+
         pitem -> addChild(new QTreeWidgetItem(QStringList("sei_payload(" + QString::number(payloadType) + ", " + QString::number(payloadSize) + ")")));
     }
   }
@@ -1900,19 +1912,84 @@ void SyntaxViewer::createUserDataUnregistered(std::shared_ptr<HEVC::UserDataUnre
   }
   else
   {
-    str = "user_data_payload_byte = {\n\t";
+    str = "user_data_payload_byte = {\n    ";
+    for (int i = 0; i < 16; i++)
+    {
+      str += QString(pSei->uuid_iso_iec_11578[i]);
+    }
+    str += " ";
     for (int i = 0; i < pSei -> user_data_payload_byte.size() - 1; i++)
     {
-      str += QString("%1").arg(pSei -> user_data_payload_byte[i], 2, 16, QChar('0')).toLower();
-      if((i + 1) % 16 == 0)
-        str += "\n\t";
+      //str += QString("%1").arg(pSei -> user_data_payload_byte[i], 2, 16, QChar('0')).toLower();
+      //if((i + 1) % 16 == 0)
+      //  str += "\n\t";
+      str += QString(pSei -> user_data_payload_byte[i]);
+      if((i + 1) % 64 == 0){
+        str += "\n    ";
+      }
     }
-    str += QString::number(pSei -> user_data_payload_byte[pSei -> user_data_payload_byte.size() - 1], 16) + "\n}";
+    //str += QString::number(pSei->user_data_payload_byte[pSei->user_data_payload_byte.size() - 1], 16) + "\n}";
+    str += "\n}";
   }
 
   pItem -> addChild(new QTreeWidgetItem(QStringList(str)));
 }
 
+void SyntaxViewer::createReserved(std::shared_ptr<HEVC::SeiReservedInfo> pSei, QTreeWidgetItem *pItem)
+{
+  QString str =
+    QString("%1").arg(pSei -> uuid_iso_iec_11578[0], 2, 16, QChar('0')).toLower() +
+    QString("%1").arg(pSei -> uuid_iso_iec_11578[1], 2, 16, QChar('0')).toLower() +
+    QString("%1").arg(pSei -> uuid_iso_iec_11578[2], 2, 16, QChar('0')).toLower() +
+    QString("%1").arg(pSei -> uuid_iso_iec_11578[3], 2, 16, QChar('0')).toLower() +
+    "-" +
+    QString("%1").arg(pSei -> uuid_iso_iec_11578[4], 2, 16, QChar('0')).toLower() +
+    QString("%1").arg(pSei -> uuid_iso_iec_11578[5], 2, 16, QChar('0')).toLower() +
+    "-" +
+    QString("%1").arg(pSei -> uuid_iso_iec_11578[6], 2, 16, QChar('0')).toLower() +
+    QString("%1").arg(pSei -> uuid_iso_iec_11578[7], 2, 16, QChar('0')).toLower() +
+    "-" +
+    QString("%1").arg(pSei -> uuid_iso_iec_11578[8], 2, 16, QChar('0')).toLower() +
+    QString("%1").arg(pSei -> uuid_iso_iec_11578[9], 2, 16, QChar('0')).toLower() +
+    "-" +
+    QString("%1").arg(pSei -> uuid_iso_iec_11578[10], 2, 16, QChar('0')).toLower() +
+    QString("%1").arg(pSei -> uuid_iso_iec_11578[11], 2, 16, QChar('0')).toLower() +
+    QString("%1").arg(pSei -> uuid_iso_iec_11578[12], 2, 16, QChar('0')).toLower() +
+    QString("%1").arg(pSei -> uuid_iso_iec_11578[13], 2, 16, QChar('0')).toLower() +
+    QString("%1").arg(pSei -> uuid_iso_iec_11578[14], 2, 16, QChar('0')).toLower() +
+    QString("%1").arg(pSei -> uuid_iso_iec_11578[15], 2, 16, QChar('0')).toLower();
+
+  pItem -> addChild(new QTreeWidgetItem(QStringList("uuid_iso_iec_11578 = " + str)));
+
+
+  if(pSei -> user_data_payload_byte.empty())
+  {
+    str = "reserved_payload_byte = { }";
+  }
+  else
+  {
+    str = "reserved_payload_byte = {\n    ";
+    for (int i = 0; i < 16; i++)
+    {
+      str += QString(pSei->uuid_iso_iec_11578[i]);
+    }
+    str += " ";
+    for (int i = 0; i < pSei -> user_data_payload_byte.size() - 1; i++)
+    {
+      //str += QString("%1").arg(pSei -> user_data_payload_byte[i], 2, 16, QChar('0')).toLower();
+      //if((i + 1) % 16 == 0)
+      //  str += "\n\t";
+      str += QString(pSei -> user_data_payload_byte[i]);
+      if((i + 1) % 64 == 0){
+        str += "\n    ";
+      }
+    }
+    //str += QString::number(pSei->user_data_payload_byte[pSei->user_data_payload_byte.size() - 1], 16) + "\n}";
+    str += "\n}";
+  }
+
+  pItem -> addChild(new QTreeWidgetItem(QStringList(str)));
+}
 
 void SyntaxViewer::createBufferingPeriod(std::shared_ptr<HEVC::BufferingPeriod> pSei, QTreeWidgetItem *pItem)
 {
@@ -2258,7 +2335,7 @@ void SyntaxViewer::createSOPDescription(std::shared_ptr<HEVC::SOPDescription> pS
 
     if(pSei -> sop_vcl_nut[i] != 19 && pSei -> sop_vcl_nut[i] != 20)
     {
-      QTreeWidgetItem *pitemIf = new QTreeWidgetItem(QStringList("if( sop_vcl_nut[ i ] != IDR_W_RADL && sop_vcl_nut[ i ] != IDR_N_LP )"));
+      QTreeWidgetItem *pitemIf = new QTreeWidgetItem(QStringList("if( sop_vcl_nut[ i ] != IDR_W_RADL(19) && sop_vcl_nut[ i ] != IDR_N_LP(20) )"));
       ploop -> addChild(pitemIf);
 
       pitemIf -> addChild(new QTreeWidgetItem(QStringList("sop_short_term_rps_idx[" + QString::number(i) + "] = " + QString::number(pSei -> sop_short_term_rps_idx[i]))));

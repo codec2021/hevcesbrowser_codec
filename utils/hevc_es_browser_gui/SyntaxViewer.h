@@ -52,6 +52,7 @@ private:
 
     void createDecodedPictureHash(std::shared_ptr<HEVC::DecodedPictureHash> pDecPictHash, QTreeWidgetItem *pItem);
     void createUserDataUnregistered(std::shared_ptr<HEVC::UserDataUnregistered> pSei, QTreeWidgetItem *pItem);
+    void createReserved(std::shared_ptr<HEVC::SeiReservedInfo> pSei, QTreeWidgetItem *pItem);
     void createSceneInfo(std::shared_ptr<HEVC::SceneInfo> pSei, QTreeWidgetItem *pItem);
     void createFullFrameSnapshot(std::shared_ptr<HEVC::FullFrameSnapshot> pSei, QTreeWidgetItem *pItem);
     void createProgressiveRefinementSegmentStart(std::shared_ptr<HEVC::ProgressiveRefinementSegmentStart> pSeiPayload, QTreeWidgetItem *pItem);

@@ -66,9 +66,8 @@ CentralWidget::~CentralWidget()
 
 void CentralWidget::setHexOffset(std::shared_ptr<HEVC::NALUnit>, ParserInfo info)
 {
-  m_phexViewer -> showFromOffset(info.m_position);
+  m_phexViewer ->showFromOffset(info.m_position);
   m_phexViewer->setFocus();
-
 }
 
 
