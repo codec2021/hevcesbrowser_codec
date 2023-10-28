@@ -302,6 +302,15 @@ namespace HEVC
     void toDefault() {};
   };
 
+  class SeiReservedInfo: public SeiPayload
+  {
+  public:
+    uint8_t                               uuid_iso_iec_11578[16];
+    std::vector<uint8_t>                  user_data_payload_byte;
+
+    void toDefault() {};
+  };
+  
   class SceneInfo: public SeiPayload
   {
   public:
