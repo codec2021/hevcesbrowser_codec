@@ -424,6 +424,13 @@ void HevcParserImpl::processSliceHeader(std::shared_ptr<Slice> pslice, Bitstream
       }
 
       pslice -> five_minus_max_num_merge_cand = bs.getGolombU();
+      if (pslice->five_minus_max_num_merge_cand < 1 || pslice->five_minus_max_num_merge_cand > 4) {
+          std::stringstream ss;
+          ss << "five_minus_max_num_merge_cand = "
+            << (int) pslice -> five_minus_max_num_merge_cand 
+            << ", but must be in range (1-5)";
+          onWarning(ss.str(), &info, Parser::OUT_OF_RANGE);
+      }
     }
     pslice -> slice_qp_delta = bs.getGolombS();
 
@@ -949,6 +956,14 @@ void HevcParserImpl::processSEI(std::shared_ptr<SEI> psei, BitstreamReader &bs, 
         std::shared_ptr<AlternativeTransferCharacteristics> pseiPayload(new AlternativeTransferCharacteristics);
         BitstreamReader tmpBs = bs;
         processAlternativeTransferCharacteristics(pseiPayload, tmpBs);
+        msg.sei_payload = std::dynamic_pointer_cast<SeiPayload>(pseiPayload);
+        break;
+      }
+      default:
+      {
+        std::shared_ptr<SeiReservedInfo> pseiPayload(new SeiReservedInfo);
+        BitstreamReader tmpBs = bs;
+        processReserved(pseiPayload, tmpBs, payloadSize);
         msg.sei_payload = std::dynamic_pointer_cast<SeiPayload>(pseiPayload);
         break;
       }
@@ -1715,6 +1730,19 @@ void HevcParserImpl::processActiveParameterSets(std::shared_ptr<ActiveParameterS
 }
 
 void HevcParserImpl::processUserDataUnregistered(std::shared_ptr<UserDataUnregistered> pSeiPayload, BitstreamReader &bs, std::size_t payloadSize)
+{
+  if(payloadSize < 16)
+    return;
+
+  for(std::size_t i=0; i<16; i++)
+    pSeiPayload -> uuid_iso_iec_11578[i] = bs.getBits(8);
+
+  pSeiPayload -> user_data_payload_byte.resize(payloadSize - 16);
+  for(std::size_t i=16; i<payloadSize; i++)
+    pSeiPayload -> user_data_payload_byte[i-16] = bs.getBits(8);
+}
+
+void HevcParserImpl::processReserved(std::shared_ptr<SeiReservedInfo> pSeiPayload, BitstreamReader &bs, std::size_t payloadSize)
 {
   if(payloadSize < 16)
     return;
